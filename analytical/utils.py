@@ -8,7 +8,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 
 HTML_COMMENT = "<!-- %(service)s disabled on internal IP " \
-        "address\n%(html)s\n-->"
+               "address\n%(html)s\n-->"
 
 
 def get_required_setting(setting, value_re, invalid_msg):
@@ -22,10 +22,12 @@ def get_required_setting(setting, value_re, invalid_msg):
         value = getattr(settings, setting)
     except AttributeError:
         raise AnalyticalException("%s setting: not found" % setting)
+    if value is None:
+        raise AnalyticalException("%s setting is set to None" % setting)
     value = str(value)
     if not value_re.search(value):
         raise AnalyticalException("%s setting: %s: '%s'"
-                % (setting, invalid_msg, value))
+                                  % (setting, invalid_msg, value))
     return value
 
 

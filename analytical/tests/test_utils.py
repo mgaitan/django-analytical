@@ -3,41 +3,30 @@ Tests for the analytical.utils module.
 """
 
 from django.conf import settings
-from django.contrib.sites.models import Site
 from django.http import HttpRequest
 from django.template import Context
+from django.test.utils import override_settings
 
 from analytical.utils import (
     get_domain, is_internal_ip, get_required_setting, AnalyticalException)
-from analytical.tests.utils import (
-    TestCase, override_settings, with_apps, SETTING_DELETED)
+from analytical.tests.utils import TestCase
 
 
 class SettingDeletedTestCase(TestCase):
-    @override_settings(USER_ID=SETTING_DELETED)
-    def test_deleted_setting_raises_exception(self):
-        self.assertRaises(AttributeError, getattr, settings, "USER_ID")
 
-    @override_settings(USER_ID=1)
-    def test_only_disable_within_context_manager(self):
-        """
-        Make sure deleted settings returns once the block exits.
-        """
-        self.assertEqual(settings.USER_ID, 1)
-
-        with override_settings(USER_ID=SETTING_DELETED):
-            self.assertRaises(AttributeError, getattr, settings, "USER_ID")
-
-        self.assertEqual(settings.USER_ID, 1)
-
-    @override_settings(USER_ID=SETTING_DELETED)
+    @override_settings(USER_ID=None)
     def test_get_required_setting(self):
         """
         Make sure using get_required_setting fails in the right place.
         """
-        # only available in python >= 2.7
-        if hasattr(self, 'assertRaisesRegexp'):
-            with self.assertRaisesRegexp(AnalyticalException, "^USER_ID setting: not found$"):
+
+        # available in python >= 3.2
+        if hasattr(self, 'assertRaisesRegex'):
+            with self.assertRaisesRegex(AnalyticalException, "^USER_ID setting is set to None$"):
+                user_id = get_required_setting("USER_ID", "\d+", "invalid USER_ID")
+        # available in python >= 2.7, deprecated in 3.2
+        elif hasattr(self, 'assertRaisesRegexp'):
+            with self.assertRaisesRegexp(AnalyticalException, "^USER_ID setting is set to None$"):
                 user_id = get_required_setting("USER_ID", "\d+", "invalid USER_ID")
         else:
             self.assertRaises(AnalyticalException,
